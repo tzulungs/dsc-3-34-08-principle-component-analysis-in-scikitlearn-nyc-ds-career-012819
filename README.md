@@ -1,178 +1,279 @@
 
-# Principal Component Analysis in scikit-learn
+# Performing Principal Component Analysis (PCA)
 
 ## Introduction
-In this lesson, we'll look at implementing PCA in scikit-learn. Upto this point, we have developed an intuition behid the process involved in PCA and also coded it from scratch in Numpy. Scikit-learn takes away most of the calculations from analysis as its PCA module offers them under the hood. 
+
+In this lesson, you'll code PCA from the ground up using NumPy. This should provide you with a deeper understanding of the algorithm and continue to practice your linear algebra skills.
 
 ## Objectives
+
 You will be able to:
-* Implement PCA algorithm using scikit-learn library 
-* Extract and visualize principal components and their explained variance
-* Reduce the number of dimensions for a given dataset using PCA 
+
+- Understand the steps required to perform PCA on a given dataset
+- Understand and explain the role of Eigen decomposition in PCA
 
 
-## Let's get started 
+## Step 1: Get some data
 
-In this lab, we shall replicate the process for running PCA as we saw earlier,in the scikit-learn environment. 
-
-Let's begin with the standard imports:
+To start, generate some data for PCA!
 
 
 ```python
-%matplotlib inline
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns; sns.set()
+%matplotlib inline
+
+x1 = np.random.uniform(low=0, high=10, size=100)
+x2 = [(xi*3)+np.random.normal(scale=2) for xi in x1]
+plt.scatter(x1,x2);
 ```
 
-## Generate Data for analysis
 
-Consider the following 200 points:
+![png](index_files/index_2_0.png)
+
+
+## Step 2: Subtract the mean
+
+Next, you have to subtract the mean from each dimension of the data. So, all the $x$ values
+have $\bar{x}$ (the mean of the $x$ values of all the data points) subtracted, and all the $y$ values
+have $\bar{y}$ subtracted from them. 
 
 
 ```python
-# Generate some data for analysis
+import pandas as pd
 
-rng = np.random.RandomState(1)
-X = np.dot(rng.rand(2, 2), rng.randn(2, 200)).T
-plt.scatter(X[:, 0], X[:, 1])
-plt.axis('equal');
+data = pd.DataFrame([x1,x2]).transpose()
+data.columns = ['x1', 'x2']
+data.head()
 ```
 
 
-![png](index_files/index_5_0.png)
 
 
-## Fit the PCA model
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
 
-It is clear that there is an almost linear relationship between the x and y variables. We know that in principal component analysis, this relationship is quantified by finding a list of the *principal components* in the data, and using those axes to describe the dataset.
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
 
-Using Scikit-Learn's ``PCA`` estimator, we can compute this as follows:
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>x1</th>
+      <th>x2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1.032030</td>
+      <td>-0.492450</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>3.979683</td>
+      <td>9.763812</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>8.883582</td>
+      <td>28.979365</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>9.893061</td>
+      <td>28.469174</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>8.145913</td>
+      <td>25.109462</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
 
 
 ```python
-# Create a PCA instance and fit the data 
-from sklearn.decomposition import PCA
-pca = PCA(n_components=2) # Number of principal components required
-pca.fit(X)
+data.mean()
 ```
 
 
 
 
-    PCA(copy=True, iterated_power='auto', n_components=2, random_state=None,
-      svd_solver='auto', tol=0.0, whiten=False)
+    x1     4.535001
+    x2    13.566201
+    dtype: float64
 
-
-
-## PCA Results
-
-The `fit` method learns two key quantities from the data:
-* Principal components 
-* Explained Variance
-
-Below is how we extract them from a learned PCA model. 
-
-
-```python
-# Check components
-print(pca.components_)
-```
-
-    [[ 0.94446029  0.32862557]
-     [ 0.32862557 -0.94446029]]
 
 
 
 ```python
-# Check explained variance
-
-print(pca.explained_variance_)
+mean_centered = data - data.mean()
+mean_centered.head()
 ```
 
-    [ 0.75871884  0.01838551]
 
 
-Based on above, the total variance explained by both principal components is around 0.77. 
 
-## Visualize Principal Components - Optional
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
 
-This step is not mandatory while running PCA. Visualizing the components here is aimed to provide you with a intuition for the process. 
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
 
-We can visualize the quantities above to see what they mean. We can plot them them as vectors over the input data, using the "components" to define the direction of the vector, and the "explained variance" to define the squared-length of the vector as shown below. 
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>x1</th>
+      <th>x2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>-3.502971</td>
+      <td>-14.058652</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>-0.555318</td>
+      <td>-3.802390</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>4.348581</td>
+      <td>15.413164</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>5.358060</td>
+      <td>14.902973</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>3.610912</td>
+      <td>11.543261</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+## Step 3: Calculate the covariance matrix
+
+Now that you have normalized your data, you must now calculate the covariance matrix.
 
 
 ```python
-# Draw the principal comnents on top of scatter plot 
-def draw_vector(v0, v1, ax=None):
-    ax = ax or plt.gca()
-    arrowprops=dict(arrowstyle='->',
-                    linewidth=2,
-                    shrinkA=0, shrinkB=0)
-    ax.annotate('', v1, v0, arrowprops=arrowprops)
-
-# plot data
-plt.scatter(X[:, 0], X[:, 1], alpha=0.2)
-for length, vector in zip(pca.explained_variance_, pca.components_):
-    v = vector * 3 * np.sqrt(length)
-    draw_vector(pca.mean_, pca.mean_ + v)
-plt.axis('equal');
+cov = np.cov([mean_centered.x1, mean_centered.x2])
+cov
 ```
 
 
-![png](index_files/index_13_0.png)
 
 
-These vectors represent the *principal axes* of the data. The length of these components is a measure of the variance of the data when projected onto that axis.
-The projection of each data point onto the principal axes are the "*principal components*" of the data.
+    array([[ 7.15958302, 21.47416477],
+           [21.47416477, 67.92443943]])
 
-If we plot these principal components beside the original data, we see the plots shown here:
 
-![](pcs.png)
 
-This transformation from data axes to principal axes is called an __affine transformation__, which basically means it is composed of a translation, rotation, and uniform scaling.
+## Step 4: Calculate the eigenvectors and eigenvalues of the covariance matrix
 
-## PCA for dimensionality reduction
-
-Using PCA for dimensionality reduction involves zeroing out one or more of the smallest principal components, resulting in a lower-dimensional projection of the data that preserves the maximal data variance.
-
-Here is an example of using PCA as a dimensionality reduction transform:
+Now that you've calculated the covariance matrix, its time to compute the associated eigenvectors. These will form the new axes when its time to reproject the dataset on the new basis.
 
 
 ```python
-## Compute only the first principal component
-pca = PCA(n_components=1)
-pca.fit(X)
-X_pca = pca.transform(X)
-print("original shape:   ", X.shape)
-print("transformed shape:", X_pca.shape)
+eigen_value, eigen_vector = np.linalg.eig(cov)
+eigen_vector
 ```
 
-### Inverse Transformation
 
-The transformed data has been reduced to a single dimension. To understand the effect of this dimensionality reduction, we can perform the inverse transform of this reduced data and plot it along with the original data:
+
+
+    array([[-0.95305204, -0.30280656],
+           [ 0.30280656, -0.95305204]])
+
+
 
 
 ```python
-X_new = pca.inverse_transform(X_pca)
-plt.scatter(X[:, 0], X[:, 1], alpha=0.2)
-plt.scatter(X_new[:, 0], X_new[:, 1], alpha=0.8)
-plt.axis('equal');
+eigen_value
 ```
 
 
-![png](index_files/index_20_0.png)
 
 
-The light points are the original data, while the dark points are the projected version.
+    array([ 0.33674687, 74.74727559])
 
-This makes clear what a PCA dimensionality reduction means.
 
-> Dimensionality Reduction involves removing information along the least important principal axis or axes, leaving only the component(s) of the data with the highest variance. The fraction of variance that is cut out is roughly a measure of how much "information" is discarded in this reduction of dimensionality.
 
-## PCA Variations
+## Step 5: Choosing components and forming a feature vector
 
-PCA's main weakness is that it tends to be highly affected by outliers in the data. For this reason, many robust variants of PCA have been developed, many of which act to iteratively discard data points that are poorly described by the initial components. Scikit-Learn contains a couple interesting variants on PCA, including `RandomizedPCA` and `SparsePCA`, both also in the `sklearn.decomposition` submodule.` RandomizedPCA` uses a non-deterministic method to quickly approximate the first few principal components in very high-dimensional data, while `SparsePCA` introduces a regularization term that serves to enforce sparsity of the components.
+If you look at the eigenvectors and eigenvalues above, you can see that the eigenvalues have very different values. In fact, it turns out that **the eigenvector with the highest eigenvalue is the principal component of the data set.**
 
-##  Summary
-In this lesson, we looked at implementing PCA with scikit-learn. We looked creating instances of PCA while defining number of required components. We also visualized and explained the principal components and their meaning. Dimensionality reduction involves dropping one or more such components which describe the data variance at minimum. Finally we looked at some PCA variations offered by scikit-learn for special cases. 
+
+In general, once eigenvectors are found from the covariance matrix, the next step is to order them by eigenvalue, highest to lowest. This gives us the components in order of significance. Typically, PCA will be used to reduce the dimensionality of the dataset and, as such, some of these eigenvectors will be subsequently discarded. In general, the smaller the eigenvalue relative to others, the less information encoded within said feature.
+
+Finally, you need to form a __feature vector__, which is just a fancy name for a matrix of vectors. This is constructed by taking the eigenvectors that you want to keep from the list of eigenvectors, and forming a matrix with these eigenvectors in the columns as shown below:
+
+
+```python
+e_indices = np.argsort(eigen_value)[::-1] #Get the index values of the sorted eigenvalues
+eigenvectors_sorted = eigen_vector[:,e_indices]
+eigenvectors_sorted
+```
+
+
+
+
+    array([[-0.30280656, -0.95305204],
+           [-0.95305204,  0.30280656]])
+
+
+
+## Step 5: Deriving the new data set
+
+This the final step in PCA, and is also the easiest. Once you have chosen the components (eigenvectors) that you wish to keep in our data and formed a feature vector, you simply take the transpose of the vector and multiply it on the left of the original data set, transposed.
+
+
+```python
+transformed = eigenvectors_sorted.dot(mean_centered.T).T
+transformed[:5]
+```
+
+
+
+
+    array([[ 14.4593493 ,  -0.91853819],
+           [  3.79202935,  -0.62214167],
+           [-16.00632588,   0.52278351],
+           [-15.82576429,  -0.59379253],
+           [-12.0947357 ,   0.05398833]])
+
+
+
+## Summary 
+
+That's it! You just coded PCA on your own using NumPy! In the next lab, you'll continue to practice this on your own!
